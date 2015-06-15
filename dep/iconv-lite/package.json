@@ -1,0 +1,6 @@
+{
+  "browser": {
+    "./extend-node": false,
+    "./streams": false
+  }
+}

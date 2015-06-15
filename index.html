@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BMS Viewer</title>
+</head>
+<body>
+
+<input type="file" name="file">
+
+<script src="js/lodash-3.9.3.min.js"></script>
+<script src="js/chardet-0.0.8.js"></script>
+<script src="js/iconv-lite-0.4.10.js"></script>
+<script src="js/bmsjs-0.11.1.js"></script>
+<script>
+
+function onFileSelect(e) {
+  readFile(e.target.files[0]);
+}
+
+function readFile(file) {
+  var reader = new FileReader();
+
+  reader.onload = function(e) {
+    getBmsChart(e.target.result);
+  };
+
+  reader.readAsText(file);
+}
+
+function getBmsChart(content) {
+  var chart = bmsjs.Compiler.compile(content);
+  
+  renderBms(chart.chart);
+}
+
+function renderBms(chart) {
+  var timing = bmsjs.Timing.fromBMSChart(chart);
+  var notes = bmsjs.Notes.fromBMSChart(chart);
+}
+
+document.querySelector("input[type=file]").addEventListener("change", onFileSelect);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "web-bms-viewer",
+  "version": "0.1.0",
+  "description": "BMS Viewer for Web",
+  "author": "Snack <korsnack@korsnack.kr>",
+  "license": "MIT",
+  "dependencies": {
+    "data-structure": "^1.2.0",
+    "uglifyify": "^3.0.1"
+  }
+}

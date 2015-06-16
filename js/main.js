@@ -50,14 +50,14 @@ function renderBms(chart) {
   var barNotes = [], output = [];
 
   var xtMap = {
-    "SC": [ 30, "r"],
-    "1":  [ 55, "w"],
-    "2":  [ 70, "b"],
-    "3":  [ 85, "w"],
-    "4":  [100, "b"],
-    "5":  [115, "w"],
-    "6":  [130, "b"],
-    "7":  [145, "w"],
+    "SC": [  0, "r"],
+    "1":  [ 25, "w"],
+    "2":  [ 40, "b"],
+    "3":  [ 55, "w"],
+    "4":  [ 70, "b"],
+    "5":  [ 85, "w"],
+    "6":  [100, "b"],
+    "7":  [115, "w"],
   };
   var notePattern = "<div class='note note-{t}' style='margin-top:{y}px;margin-left:{x}px'></div>";
 
@@ -77,7 +77,7 @@ function renderBms(chart) {
     var thisBarLength = barLength[currentBar];
 
     var relativeBeat = note.beat - barLengthSum[currentBar - 1];
-    var x = xtMap[note.column.column][0];
+    var x = xtMap[note.column.column][0] + 35;
     var y = (thisBarLength - relativeBeat) * 48 - 4;
     var t = xtMap[note.column.column][1];
 
@@ -120,8 +120,10 @@ function printBms(barLength, bpmChanges, barNotes) {
     beatSum += length;
 
     buffer.unshift("<div class='bar' style='height:" + length * 48 + "px'>" +
-                   "<div class='bar-number'><span>" + bar + "</span></div>" +
-                   notes.join("") +
+                     "<div class='bar-number'>" +
+                       "<span style='margin-top:" + (length * 24 - 10) + "px'>" + bar + "</span>" +
+                     "</div>" +
+                     notes.join("") +
                    "</div>");
   }
 
@@ -134,8 +136,8 @@ function printBms(barLength, bpmChanges, barNotes) {
               "</div>");
 
 
-  // 180 = 10 + 160 + 10 (margin of column + width of beat)
-  document.querySelector(".output").style.width = (output.length * 180) + "px";
+  // 185 = 10 + (35 + 130) + 10 (margin of column + width of beat)
+  document.querySelector(".output").style.width = (output.length * 185) + "px";
   document.querySelector(".output").innerHTML = output.join("");
 
   document.querySelector(".before").style.display = "none";

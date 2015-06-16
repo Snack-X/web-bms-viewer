@@ -48,7 +48,7 @@ html, body {
 }
 
 .bar {
-  width: 160px;
+  width: 165px;
   background-image: url("../res/grid.svg");
   background-position: right bottom;
   background-repeat: repeat-y;
@@ -58,9 +58,8 @@ html, body {
 }
 
 .bar-number {
-  display: table;
   float: left;
-  width: 30px;
+  width: 35px;
   height: 100%;
   background: #777;
   border: solid #fff;
@@ -68,13 +67,14 @@ html, body {
   -webkit-box-sizing: border-box;
      -moz-box-sizing: border-box;
           box-sizing: border-box;
-  text-align: center;
 }
 .bar-number span {
-  display: table-cell;
-  vertical-align: middle;
+  position: absolute;
+  width: 35px;
   color: #fff;
-  font-size: 0.5em;
+  font-size: 10px;
+  text-align: center;
+  line-height: 20px;
 }
 
 .note {

@@ -1,0 +1,10 @@
+.output { padding: 20px; background-color: #000; }
+.output:before, .output:after { content: ""; display: table; }
+.output:after { clear: both; }
+.column { margin: 0 10px; float: left; }
+.beat { width: 130px; background-image: url("res/grid.svg"); background-position: bottom; }
+.beat.empty { background: none; }
+.note { position: absolute; width: 15px; height: 4px; }
+.note-r { width: 25px; background: #f00; }
+.note-w { background: #fff; }
+.note-b { background: #08f; }

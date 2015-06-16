@@ -1,48 +1,12 @@
-function onFileSelect(e) {
-  readFile(e.target.files[0]);
-}
-
 function readFile(file) {
   var reader = new FileReader();
 
   reader.onload = function(e) {
-    getBmsChart(e.target.result);
+    var chart = bmsjs.Compiler.compile(e.target.result);
+    renderBms(chart.chart);
   };
 
   reader.readAsText(file);
-}
-
-function getBmsChart(content) {
-  var chart = bmsjs.Compiler.compile(content);
-  
-  renderBms(chart.chart);
-}
-
-function printBms(bars) {
-  var start = 0;
-  var output = "";
-  var buffer = "";
-
-  var columns = Math.ceil(bars.length / 4);
-  
-  while(bars.length % 4 !== 0) {
-    bars.push("<div class='beat empty' style='height:192px'></div>");
-  }
-
-  for(var i = start ; i < bars.length ; i++) {
-    buffer = bars[i] + buffer;
-
-    if(i % 4 === 3) {
-      output += "<div class='column'>" + buffer + "</div>";
-      buffer = "";
-    }
-  }
-
-  document.querySelector(".output").innerHTML = output;
-
-  var columns = Math.ceil(bars.length / 4);
-
-  document.querySelector(".output").style.width = (columns * 150) + "px";
 }
 
 function renderBms(chart) {
@@ -56,7 +20,9 @@ function renderBms(chart) {
     var outputBefore = "<div class='beat' style='height:{h}px'>";
     var outputAfter = "</div>";
 
-    outputBar[barNum] = outputBefore.replace("{h}", beatCnt * 48) + output.join("") + outputAfter; 
+    outputBar[barNum] = outputBefore.replace("{h}", beatCnt * 48) +
+                        output.join("") +
+                        outputAfter; 
   }
 
   // Main loop
@@ -98,7 +64,9 @@ function renderBms(chart) {
     var y = (4 - relativeBeat) * 48 - 4;
     var t = xtMap[note.column.column][1];
 
-    output.push(notePattern.replace("{x}", x).replace("{y}", y).replace("{t}", t));
+    output.push(notePattern.replace("{x}", x)
+                           .replace("{y}", y)
+                           .replace("{t}", t));
   }
 
   writeBar(bar, output, 4);
@@ -106,4 +74,49 @@ function renderBms(chart) {
   printBms(outputBar);
 }
 
-document.querySelector("input[type=file]").addEventListener("change", onFileSelect);
+function printBms(bars) {
+  var start = 0;
+  var output = "";
+  var buffer = "";
+
+  var columns = Math.ceil(bars.length / 4);
+  
+  while(bars.length % 4 !== 0) {
+    bars.push("<div class='beat empty' style='height:192px'></div>");
+  }
+
+  for(var i = start ; i < bars.length ; i++) {
+    buffer = bars[i] + buffer;
+
+    if(i % 4 === 3) {
+      output += "<div class='column'>" + buffer + "</div>";
+      buffer = "";
+    }
+  }
+
+  document.querySelector(".output").innerHTML = output;
+
+  var columns = Math.ceil(bars.length / 4);
+  document.querySelector(".output").style.width = (columns * 150) + "px";
+
+  document.querySelector(".before").style.display = "none";
+  document.querySelector(".after").style.display = "block";
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var dropZone = document.querySelector(".drop-zone");
+dropZone.addEventListener("dragover", function(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "copy";
+});
+
+dropZone.addEventListener("drop", function(e) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  var file = e.dataTransfer.files[0];
+
+  readFile(file);
+});

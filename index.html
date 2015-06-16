@@ -7,8 +7,9 @@
 .output { padding: 20px; background-color: #000; }
 .output:before, .output:after { content: ""; display: table; }
 .output:after { clear: both; }
-.row { margin: 0 10px; float: left; }
+.column { margin: 0 10px; float: left; }
 .beat { width: 130px; background-image: url("res/grid.svg"); background-position: bottom; }
+.beat.empty { background: none; }
 .note { position: absolute; width: 15px; height: 4px; }
 .note-r { width: 25px; background: #f00; }
 .note-w { background: #fff; }
@@ -53,16 +54,26 @@ function printBms(bars) {
   var output = "";
   var buffer = "";
 
+  var columns = Math.ceil(bars.length / 4);
+  
+  while(bars.length % 4 !== 0) {
+    bars.push("<div class='beat empty' style='height:192px'></div>");
+  }
+
   for(var i = start ; i < bars.length ; i++) {
-    if(i % 4 === 0) {
-      output += "<div class='row'>" + buffer + "</div>";
+    buffer = bars[i] + buffer;
+
+    if(i % 4 === 3) {
+      output += "<div class='column'>" + buffer + "</div>";
       buffer = "";
     }
-
-    buffer = bars[i] + buffer;
   }
 
   document.querySelector(".output").innerHTML = output;
+
+  var columns = Math.ceil(bars.length / 4);
+
+  document.querySelector(".output").style.width = (columns * 150) + "px";
 }
 
 function renderBms(chart) {

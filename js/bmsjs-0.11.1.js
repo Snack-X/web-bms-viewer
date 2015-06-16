@@ -330,6 +330,8 @@ function eachLine(text, callback) {
 
 },{"./bms/chart":1,"./bms/headers":2,"./bms/objects":3,"./compiler":4,"./keysounds":6,"./notes":7,"./song-info":9,"./speedcore":10,"./time-signatures":12,"./timing":13}],6:[function(require,module,exports){
 
+var Utils = require('../util/utils')
+
 function Keysounds(map) {
   this._map = map
 }
@@ -339,7 +341,7 @@ Keysounds.prototype.get = function(id) {
 }
 
 Keysounds.prototype.files = function() {
-  return _.uniq(_.values(this._map))
+  return Utils.uniq(Utils.values(this._map))
 }
 
 Keysounds.prototype.all = function() {
@@ -358,7 +360,7 @@ Keysounds.fromBMSChart = function(chart) {
 
 module.exports = Keysounds
 
-},{}],7:[function(require,module,exports){
+},{"../util/utils":15}],7:[function(require,module,exports){
 
 var Note = require('./note')
 
@@ -543,7 +545,7 @@ module.exports = new DataStructure({
 
 })
 
-},{"data-structure":15}],9:[function(require,module,exports){
+},{"data-structure":16}],9:[function(require,module,exports){
 
 var match = require('../util/match')
 module.exports = SongInfo
@@ -677,7 +679,7 @@ module.exports = new DataStructure({
 })
 
 
-},{"data-structure":15}],12:[function(require,module,exports){
+},{"data-structure":16}],12:[function(require,module,exports){
 
 /**
  * @module time-signatures
@@ -738,6 +740,7 @@ TimeSignatures.prototype.measureToBeat = function(measure, fraction) {
 // They are created from a notechart.
 
 var Speedcore = require('../speedcore')
+var Utils = require('../util/utils')
 
 /**
  * @module timing
@@ -798,7 +801,8 @@ function Timing(initialBPM, actions) {
     state.seconds = seconds
   })
   this._speedcore   = new Speedcore(segments)
-  this._eventBeats  = _.uniq(_.pluck(actions, 'beat'), true)
+  this._eventBeats  = Utils.uniq(Utils.pluck(actions, 'beat'), true)
+  // this._eventBeats  = _.uniq(_.pluck(actions, 'beat'), true)
 }
 
 Timing.prototype.beatToSeconds = function(beat) {
@@ -837,7 +841,7 @@ Timing.fromBMSChart = function(chart) {
 }
 
 
-},{"../speedcore":10}],14:[function(require,module,exports){
+},{"../speedcore":10,"../util/utils":15}],14:[function(require,module,exports){
 
 module.exports = match
 
@@ -862,6 +866,36 @@ function match(text) {
 
 
 },{}],15:[function(require,module,exports){
+module.exports = {
+  values: function(obj) {
+    return Object.keys(obj).map(function(k) { return obj[k]; });
+  },
+  uniq: function(array) {
+    var lookup = {};
+    var output = [];
+
+    for(var i = 0 ; i < array.length ; i++) {
+      if(typeof lookup[array[i]] === "undefined") {
+        output.push(array[i]);
+      }
+    }
+
+    return output;
+  },
+  pluck: function(objs, key) {
+    var output = [];
+
+    for(var i = 0 ; i < objs.length ; i++) {
+      if(typeof objs[i][key] !== "undefined") {
+        output.push(objs[i][key]);
+      }
+    }
+
+    return output;
+  }
+};
+
+},{}],16:[function(require,module,exports){
 
 module.exports = DataStructure
 

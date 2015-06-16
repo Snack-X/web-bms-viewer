@@ -1,4 +1,6 @@
 
+var Utils = require('../util/utils')
+
 function Keysounds(map) {
   this._map = map
 }
@@ -8,7 +10,7 @@ Keysounds.prototype.get = function(id) {
 }
 
 Keysounds.prototype.files = function() {
-  return _.uniq(_.values(this._map))
+  return Utils.uniq(Utils.values(this._map))
 }
 
 Keysounds.prototype.all = function() {

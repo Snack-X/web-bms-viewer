@@ -3,7 +3,7 @@ This project contains fork from bemusic/bms-js, bemusic/bemuse-chardet, ashtuchk
 ## Changes
 
 * Reader at bmsjs is not bundled.
-* Removed lodash dependency from bms-js. (Bundle as seperated file)
+* Removed lodash dependency from bms-js. (Self implemented some functions)
 * Removed useless requires from bemuse-chardet
 * Removed useless requires from iconv-lite, since Shift-JIS, EUC-KR, UTF-8 are only needed.
 

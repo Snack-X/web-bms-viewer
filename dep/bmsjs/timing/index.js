@@ -3,6 +3,7 @@
 // They are created from a notechart.
 
 var Speedcore = require('../speedcore')
+var Utils = require('../util/utils')
 
 /**
  * @module timing
@@ -63,7 +64,7 @@ function Timing(initialBPM, actions) {
     state.seconds = seconds
   })
   this._speedcore   = new Speedcore(segments)
-  this._eventBeats  = _.uniq(_.pluck(actions, 'beat'), true)
+  this._eventBeats  = Utils.uniq(Utils.pluck(actions, 'beat'), true)
 }
 
 Timing.prototype.beatToSeconds = function(beat) {

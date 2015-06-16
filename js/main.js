@@ -2,12 +2,17 @@ function readFile(file) {
   var reader = new FileReader();
 
   reader.onload = function(e) {
-    var chart = bmsjs.Compiler.compile(e.target.result);
-    renderBms(chart.chart);
+    var chart = getChart(e.target.result);
+    renderBms(chart);
   };
 
   reader.readAsText(file);
 }
+
+function getChart(str) {
+  var chart = bmsjs.Compiler.compile(str)
+  return chart.chart;
+} 
 
 function renderBms(chart) {
   var timing = bmsjs.Timing.fromBMSChart(chart);
@@ -16,52 +21,64 @@ function renderBms(chart) {
 
   var outputBar = [];
 
-  function writeBar(barNum, output, beatCnt) {
-    var outputBefore = "<div class='beat' style='height:{h}px'>";
-    var outputAfter = "</div>";
+  // Get bar length and BPM changes
+  var barLength = [], barLengthSum = [], totalBeat = 0;
+  var bpmChanges = {};
 
-    outputBar[barNum] = outputBefore.replace("{h}", beatCnt * 48) +
-                        output.join("") +
-                        outputAfter; 
+  // Bar length: Loop from 0 ~ last note's beat
+  while(totalBeat <= notes[notes.length - 1].beat) {
+    var beat = chart.timeSignatures.getBeats(barLength.length);
+    barLength.push(beat);
+    totalBeat += beat;
+    barLengthSum.push(totalBeat);
   }
 
-  // Main loop
-  var bar = 0;
-  var output = [];
+  console.log("Bar length", barLength);
 
-  var beatStart = bar * 4;
-  var beatEnd = (bar + 1) * 4;
+  // BPM changes: get events and changes
+  var events = timing.getEventBeats();
+  for(var i in events) {
+    var beat = events[i]
+    bpmChanges[beat] = timing.bpmAtBeat(beat);
+  }
+
+  console.log("BPM changes", bpmChanges);
+  // TODO: Display BPM changes
+
+  // Split notes into bar
+  var currentBar = 0;
+  var barNotes = [], output = [];
 
   var xtMap = {
-    "SC": [0, "r"],
-    "1": [25, "w"],
-    "2": [40, "b"],
-    "3": [55, "w"],
-    "4": [70, "b"],
-    "5": [85, "w"],
-    "6": [100, "b"],
-    "7": [115, "w"],
+    "SC": [ 30, "r"],
+    "1":  [ 55, "w"],
+    "2":  [ 70, "b"],
+    "3":  [ 85, "w"],
+    "4":  [100, "b"],
+    "5":  [115, "w"],
+    "6":  [130, "b"],
+    "7":  [145, "w"],
   };
   var notePattern = "<div class='note note-{t}' style='margin-top:{y}px;margin-left:{x}px'></div>";
 
   for(var idx in notes) {
     var note = notes[idx];
-    if(typeof note.column === "undefined") continue;
 
-    if(note.beat / 4 >= bar) {
-      while(note.beat / 4 >= bar) {
-        writeBar(bar, output, 4);
+    if(note.beat >= barLengthSum[currentBar]) {
+      while(note.beat >= barLengthSum[currentBar]) {
+        barNotes[currentBar] = output;
         output = [];
-        bar++;
-
-        beatStart = (bar - 1) * 4;
-        beatEnd = bar * 4;
+        currentBar++;
       }
     }
 
-    var relativeBeat = note.beat - beatStart;
+    if(typeof note.column === "undefined") continue;
+
+    var thisBarLength = barLength[currentBar];
+
+    var relativeBeat = note.beat - barLengthSum[currentBar - 1];
     var x = xtMap[note.column.column][0];
-    var y = (4 - relativeBeat) * 48 - 4;
+    var y = (thisBarLength - relativeBeat) * 48 - 4;
     var t = xtMap[note.column.column][1];
 
     output.push(notePattern.replace("{x}", x)
@@ -69,35 +86,57 @@ function renderBms(chart) {
                            .replace("{t}", t));
   }
 
-  writeBar(bar, output, 4);
+  // Leftover
+  barNotes[currentBar] = output;
 
-  printBms(outputBar);
+  console.log("Notes per bar", barNotes);
+
+  printBms(barLength, bpmChanges, barNotes);
 }
 
-function printBms(bars) {
-  var start = 0;
-  var output = "";
-  var buffer = "";
+function printBms(barLength, bpmChanges, barNotes) {
+  var output = [];
+  var buffer = [];
 
-  var columns = Math.ceil(bars.length / 4);
-  
-  while(bars.length % 4 !== 0) {
-    bars.push("<div class='beat empty' style='height:192px'></div>");
-  }
+  var maxBeatInColumn = 16;
+  var beatSum = 0;
 
-  for(var i = start ; i < bars.length ; i++) {
-    buffer = bars[i] + buffer;
+  for(var bar = 0 ; bar < barNotes.length ; bar++) {
+    var length = barLength[bar];
+    var notes = barNotes[bar];
 
-    if(i % 4 === 3) {
-      output += "<div class='column'>" + buffer + "</div>";
-      buffer = "";
+    if(beatSum + length > maxBeatInColumn) {
+      var padHeight = 48 * (maxBeatInColumn - beatSum);
+      buffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
+
+      output.push("<div class='column'>" +
+                  buffer.join("") +
+                  "</div>");
+
+      buffer = [];
+      beatSum = 0;
     }
+
+    beatSum += length;
+
+    buffer.unshift("<div class='bar' style='height:" + length * 48 + "px'>" +
+                   "<div class='bar-number'><span>" + bar + "</span></div>" +
+                   notes.join("") +
+                   "</div>");
   }
 
-  document.querySelector(".output").innerHTML = output;
+  // Flush
+  var padHeight = 48 * (maxBeatInColumn - beatSum);
+  buffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
 
-  var columns = Math.ceil(bars.length / 4);
-  document.querySelector(".output").style.width = (columns * 150) + "px";
+  output.push("<div class='column'>" +
+              buffer.join("") +
+              "</div>");
+
+
+  // 180 = 10 + 160 + 10 (margin of column + width of beat)
+  document.querySelector(".output").style.width = (output.length * 180) + "px";
+  document.querySelector(".output").innerHTML = output.join("");
 
   document.querySelector(".before").style.display = "none";
   document.querySelector(".after").style.display = "block";

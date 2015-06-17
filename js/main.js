@@ -11,6 +11,7 @@ function readFile(file) {
 
 function getChart(str) {
   var chart = bmsjs.Compiler.compile(str)
+  console.log(chart);
   return chart.chart;
 } 
 
@@ -23,7 +24,7 @@ function renderBms(chart) {
 
   // Get bar length and BPM changes
   var barLength = [], barLengthSum = [], totalBeat = 0;
-  var bpmChanges = {};
+  var bpmChanges = {}, bpmChangeKeys = [];
 
   // Bar length: Loop from 0 ~ last note's beat
   while(totalBeat <= notes[notes.length - 1].beat) {
@@ -36,9 +37,9 @@ function renderBms(chart) {
   console.log("Bar length", barLength);
 
   // BPM changes: get events and changes
-  var events = timing.getEventBeats();
-  for(var i in events) {
-    var beat = events[i]
+  bpmChangeKeys = timing.getEventBeats();
+  for(var i in bpmChangeKeys) {
+    var beat = bpmChangeKeys[i];
     bpmChanges[beat] = timing.bpmAtBeat(beat);
   }
 
@@ -47,6 +48,7 @@ function renderBms(chart) {
 
   // Split notes into bar
   var currentBar = 0;
+  var bpmChangeIdx = 0, currentBpm = parseFloat(chart.headers.get("bpm"));
   var barNotes = [], output = [];
 
   var xtMap = {
@@ -60,12 +62,49 @@ function renderBms(chart) {
     "7":  [115, "w"],
   };
   var notePattern = "<div class='note note-{t}' style='margin-top:{y}px;margin-left:{x}px'></div>";
+  var bpmPattern = "<div class='bpm' style='margin-top:{y}px'><span>{v}</span></div>";
+
+  function processBpmChange(startBeat, endBeat) {
+    startBeat = startBeat | 0;
+
+    var barLength = endBeat - startBeat;
+
+    var changeBeat = bpmChangeKeys[bpmChangeIdx];
+    var changeBpm = bpmChanges[bpmChangeKeys[bpmChangeIdx]];
+    while(typeof changeBeat !== "undefined" &&
+          changeBeat < endBeat) {
+      if(currentBpm === changeBpm) {
+        bpmChangeIdx++;
+        changeBeat = bpmChangeKeys[bpmChangeIdx];
+        changeBpm = bpmChanges[bpmChangeKeys[bpmChangeIdx]];
+
+        continue;
+      }
+      currentBpm = changeBpm;
+
+      console.log("BPM Change at " + changeBeat + " to " + changeBpm);
+
+      var relativeBeat = changeBeat - startBeat;
+      var y = (barLength - relativeBeat) * 48 - 11;
+
+      console.log("Relative : " + relativeBeat);
+
+      output.push(bpmPattern.replace("{v}", changeBpm)
+                            .replace("{y}", y));
+
+      bpmChangeIdx++;
+      changeBeat = bpmChangeKeys[bpmChangeIdx];
+      changeBpm = bpmChanges[bpmChangeKeys[bpmChangeIdx]];
+    }
+  }
 
   for(var idx in notes) {
     var note = notes[idx];
 
     if(note.beat >= barLengthSum[currentBar]) {
       while(note.beat >= barLengthSum[currentBar]) {
+        processBpmChange(barLengthSum[currentBar - 1], barLengthSum[currentBar]);
+
         barNotes[currentBar] = output;
         output = [];
         currentBar++;
@@ -136,8 +175,8 @@ function printBms(barLength, bpmChanges, barNotes) {
               "</div>");
 
 
-  // 185 = 10 + (35 + 130) + 10 (margin of column + width of beat)
-  document.querySelector(".output").style.width = (output.length * 185) + "px";
+  // 195 = 10 + (35 + 130) + 20 (margin of column + width of beat)
+  document.querySelector(".output").style.width = (output.length * 195) + "px";
   document.querySelector(".output").innerHTML = output.join("");
 
   document.querySelector(".before").style.display = "none";

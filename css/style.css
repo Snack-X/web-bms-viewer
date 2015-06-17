@@ -43,7 +43,7 @@ html, body {
 .output:after { clear: both; }
 
 .column {
-  margin: 0 10px;
+  margin: 0 20px 0 10px;
   float: left;
 }
 
@@ -85,3 +85,16 @@ html, body {
 .note-r { width: 25px; background: #f00; }
 .note-w { background: #fff; }
 .note-b { background: #08f; }
+
+.bpm {
+  position: absolute;
+  margin-left: 35px;
+  width: 130px;
+  border-bottom: 1px solid #0f0;
+}
+.bpm span {
+  display: block;
+  margin-left: 132px;
+  font-size: 8px;
+  color: #0f0;
+}

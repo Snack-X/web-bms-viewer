@@ -4,11 +4,24 @@ function readFile(file) {
   var reader = new FileReader();
 
   reader.onload = function(e) {
-    var chart = getChart(e.target.result);
+    // ArrayBuffer -> Uint8Array -> Buffer -> Encoding Convert -> String
+    var bmsArrayBuffer = e.target.result;
+    var bmsUintArray = new Uint8Array(bmsArrayBuffer);
+    var bmsBuffer = new Buffer.Buffer(bmsUintArray);
+    var encoding = chardet.detect(bmsBuffer);
+    var bmsContent = iconv.decode(bmsBuffer, encoding);
+
+    window.bmsContent = bmsContent;
+
+    var chart = getChart(bmsContent);
     renderBms(chart);
   };
 
-  reader.readAsText(file);
+  reader.readAsArrayBuffer(file);
+}
+
+function convertEncoding(arrayBuffer) {
+
 }
 
 function getChart(str) {
@@ -106,12 +119,8 @@ function renderBms(chart) {
       }
       currentBpm = changeBpm;
 
-      console.log("BPM Change at " + changeBeat + " to " + changeBpm);
-
       var relativeBeat = changeBeat - startBeat;
       var y = (barLength - relativeBeat) * 48 - 11;
-
-      console.log("Relative : " + relativeBeat);
 
       output.push(bpmPattern.replace("{v}", changeBpm)
                             .replace("{y}", y));
@@ -176,7 +185,7 @@ function printBms(info, barLength, bpmChanges, barNotes) {
 
   // Notes
   var output = [];
-  var buffer = [];
+  var outputBuffer = [];
 
   var maxBeatInColumn = 16;
   var beatSum = 0;
@@ -187,32 +196,33 @@ function printBms(info, barLength, bpmChanges, barNotes) {
 
     if(beatSum + length > maxBeatInColumn) {
       var padHeight = 48 * (maxBeatInColumn - beatSum);
-      buffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
+      outputBuffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
 
       output.push("<div class='column'>" +
-                  buffer.join("") +
+                  outputBuffer.join("") +
                   "</div>");
 
-      buffer = [];
+      outputBuffer = [];
       beatSum = 0;
     }
 
     beatSum += length;
 
-    buffer.unshift("<div class='bar' style='height:" + length * 48 + "px'>" +
-                     "<div class='bar-number'>" +
-                       "<span style='margin-top:" + (length * 24 - 10) + "px'>" + bar + "</span>" +
-                     "</div>" +
-                     notes.join("") +
-                   "</div>");
+    outputBuffer.unshift(
+      "<div class='bar' style='height:" + length * 48 + "px'>" +
+        "<div class='bar-number'>" +
+          "<span style='margin-top:" + (length * 24 - 10) + "px'>" + bar + "</span>" +
+        "</div>" +
+        notes.join("") +
+      "</div>");
   }
 
   // Flush
   var padHeight = 48 * (maxBeatInColumn - beatSum);
-  buffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
+  outputBuffer.unshift("<div class='bar empty' style='height:" + padHeight + "px'></div>");
 
   output.push("<div class='column'>" +
-              buffer.join("") +
+              outputBuffer.join("") +
               "</div>");
 
   // 195 = 10 + (35 + 130) + 20 (margin of column + width of beat)

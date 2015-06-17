@@ -1,4 +1,6 @@
 function readFile(file) {
+  $(".before span")[0].innerHTML = "Reading...";
+
   var reader = new FileReader();
 
   reader.onload = function(e) {
@@ -10,17 +12,29 @@ function readFile(file) {
 }
 
 function getChart(str) {
-  var chart = bmsjs.Compiler.compile(str)
-  console.log(chart);
+  $(".before span")[0].innerHTML = "Parsing......";
+
+  var chart = bmsjs.Compiler.compile(str);
+  window.bmsChart = chart.chart; // maybe use later
   return chart.chart;
 } 
 
 function renderBms(chart) {
+  $(".before span")[0].innerHTML = "Rendering.........";
+
   var timing = bmsjs.Timing.fromBMSChart(chart);
   var _notes = bmsjs.Notes.fromBMSChart(chart);
   var notes = _notes.all();
 
   var outputBar = [];
+
+  // BMS info
+  var songInfo = bmsjs.SongInfo.fromBMSChart(chart);
+  var infoTitle = songInfo.title;
+  var infoArtist = songInfo.artist;
+  var infoGenre = songInfo.genre
+  var startBpm = parseFloat(chart.headers.get("bpm"));
+  var infoMinBpm = startBpm, infoMaxBpm = startBpm;
 
   // Get bar length and BPM changes
   var barLength = [], barLengthSum = [], totalBeat = 0;
@@ -43,11 +57,23 @@ function renderBms(chart) {
     bpmChanges[beat] = timing.bpmAtBeat(beat);
   }
 
+  if(bpmChangeKeys.length === 0) {
+    bpmChangeKeys = [0];
+    bpmChanges = { 0: startBpm };
+  }
+
+  // min, max BPM
+  for(var i in bpmChangeKeys) {
+    var bpm = bpmChanges[bpmChangeKeys[i]];
+    if(infoMinBpm > bpm) infoMinBpm = bpm;
+    if(infoMaxBpm < bpm) infoMaxBpm = bpm;
+  }
+
   console.log("BPM changes", bpmChanges);
 
   // Split notes into bar
   var currentBar = 0;
-  var bpmChangeIdx = 0, currentBpm = parseFloat(chart.headers.get("bpm"));
+  var bpmChangeIdx = 0, currentBpm = startBpm;
   var barNotes = [], output = [];
 
   var xtMap = {
@@ -64,8 +90,7 @@ function renderBms(chart) {
   var bpmPattern = "<div class='bpm' style='margin-top:{y}px'><span>{v}</span></div>";
 
   function processBpmChange(startBeat, endBeat) {
-    startBeat = startBeat | 0;
-
+    startBeat = startBeat || 0;
     var barLength = endBeat - startBeat;
 
     var changeBeat = bpmChangeKeys[bpmChangeIdx];
@@ -129,10 +154,27 @@ function renderBms(chart) {
 
   console.log("Notes per bar", barNotes);
 
-  printBms(barLength, bpmChanges, barNotes);
+  // Print it
+  var bmsInfo = {
+    title: infoTitle,
+    artist: infoArtist,
+    genre: infoGenre,
+    minBpm: infoMinBpm,
+    maxBpm: infoMaxBpm
+  };
+
+  printBms(bmsInfo, barLength, bpmChanges, barNotes);
 }
 
-function printBms(barLength, bpmChanges, barNotes) {
+function printBms(info, barLength, bpmChanges, barNotes) {
+  $(".before span")[0].innerHTML = "Printing............";
+
+  // Info first
+  $(".after .info span")[0].innerHTML = "[" + info.genre + "] " + info.title
+    + " - " + info.artist + "<br>"
+    + "BPM : " + info.minBpm + " ~ " + info.maxBpm;
+
+  // Notes
   var output = [];
   var buffer = [];
 
@@ -173,25 +215,25 @@ function printBms(barLength, bpmChanges, barNotes) {
               buffer.join("") +
               "</div>");
 
-
   // 195 = 10 + (35 + 130) + 20 (margin of column + width of beat)
-  document.querySelector(".output").style.width = (output.length * 195) + "px";
-  document.querySelector(".output").innerHTML = output.join("");
+  $(".output")[0].style.width = (output.length * 195) + "px";
+  $(".output")[0].innerHTML = output.join("");
 
-  document.querySelector(".before").style.display = "none";
-  document.querySelector(".after").style.display = "block";
+  $(".before")[0].style.display = "none";
+  $(".after")[0].style.display = "block";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var dropZone = document.querySelector(".drop-zone");
-dropZone.addEventListener("dragover", function(e) {
+var dropZone = $(".drop-zone")[0];
+
+dropZone.on("dragover", function(e) {
   e.stopPropagation();
   e.preventDefault();
   e.dataTransfer.dropEffect = "copy";
 });
 
-dropZone.addEventListener("drop", function(e) {
+dropZone.on("drop", function(e) {
   e.stopPropagation();
   e.preventDefault();
 

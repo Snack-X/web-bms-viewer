@@ -11,10 +11,13 @@ html, body {
 
 .before, .after {
   width: 100%;
+}
+.before {
   height: 100%;
 }
 .after {
   display: none;
+  background-color: #000;
 }
 
 /******************************************************************************/
@@ -34,8 +37,15 @@ html, body {
 
 /******************************************************************************/
 
+.info {
+  position: fixed;
+  padding: 10px 0 0 30px;
+  color: #fff;
+}
+
 .output {
   padding: 20px;
+  padding-top: 60px;
   background-color: #000;
 }
 /* Clearfix */

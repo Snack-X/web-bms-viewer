@@ -44,7 +44,6 @@ function renderBms(chart) {
   }
 
   console.log("BPM changes", bpmChanges);
-  // TODO: Display BPM changes
 
   // Split notes into bar
   var currentBar = 0;

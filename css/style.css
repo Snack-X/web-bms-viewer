@@ -96,6 +96,11 @@ html, body {
 .note-w { background: #fff; }
 .note-b { background: #08f; }
 
+.note.long { width: 11px; }
+.long.note-r { width: 21px; background: #f00; }
+.long.note-w { background: #fff; }
+.long.note-b { background: #08f; }
+
 .bpm {
   position: absolute;
   margin-left: 35px;

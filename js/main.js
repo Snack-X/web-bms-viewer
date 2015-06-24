@@ -4,6 +4,8 @@ function readFile(file) {
   var reader = new FileReader();
 
   reader.onload = function(e) {
+    $(".before span")[0].innerHTML = "Converting......";
+
     // ArrayBuffer -> Uint8Array -> Buffer -> Encoding Convert -> String
     var bmsArrayBuffer = e.target.result;
     var bmsUintArray = new Uint8Array(bmsArrayBuffer);
@@ -20,12 +22,8 @@ function readFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function convertEncoding(arrayBuffer) {
-
-}
-
 function getChart(str) {
-  $(".before span")[0].innerHTML = "Parsing......";
+  $(".before span")[0].innerHTML = "Parsing.........";
 
   var chart = bmsjs.Compiler.compile(str);
   window.bmsChart = chart.chart; // maybe use later
@@ -33,7 +31,7 @@ function getChart(str) {
 } 
 
 function renderBms(chart) {
-  $(".before span")[0].innerHTML = "Rendering.........";
+  $(".before span")[0].innerHTML = "Rendering............";
 
   var timing = bmsjs.Timing.fromBMSChart(chart);
   var _notes = bmsjs.Notes.fromBMSChart(chart);
@@ -88,6 +86,7 @@ function renderBms(chart) {
   var currentBar = 0;
   var bpmChangeIdx = 0, currentBpm = startBpm;
   var barNotes = [], output = [];
+  var longBody = [], longEnd = [];
 
   var xtMap = {
     "SC": [  0, "r"],
@@ -100,6 +99,7 @@ function renderBms(chart) {
     "7":  [115, "w"],
   };
   var notePattern = "<div class='note note-{t}' style='margin-top:{y}px;margin-left:{x}px'></div>";
+  var longNotePattern = "<div class='note long note-{t}' style='margin-top:{y}px;margin-left:{x}px;height:{h}px'></div>";
   var bpmPattern = "<div class='bpm' style='margin-top:{y}px'><span>{v}</span></div>";
 
   function processBpmChange(startBeat, endBeat) {
@@ -120,7 +120,7 @@ function renderBms(chart) {
       currentBpm = changeBpm;
 
       var relativeBeat = changeBeat - startBeat;
-      var y = (barLength - relativeBeat) * 48 - 11;
+      var y = (barLength - relativeBeat) * 48 - 12;
 
       output.push(bpmPattern.replace("{v}", changeBpm)
                             .replace("{y}", y));
@@ -131,15 +131,90 @@ function renderBms(chart) {
     }
   }
 
+  function processLong(startBeat, endBeat) {
+    var thisBarLength = endBeat - startBeat;
+
+    for(var i in longBody) {
+      var body = longBody[i];
+
+      var y, h;
+      var x = xtMap[body.column][0] + 35 + 2;
+      var t = xtMap[body.column][1];
+
+      // Started and ended at this bar
+      if(
+        body.start >= startBeat && body.start < endBeat &&
+        body.end >= startBeat && body.end < endBeat
+      ) {
+        var endRelativeBeat = body.end - startBeat;
+        y = (thisBarLength - endRelativeBeat) * 48;
+        h = (body.end - body.start) * 48;
+
+        longBody[i] = undefined;
+      }
+      // Started at this bar but not ended
+      else if(
+        body.start >= startBeat && body.start < endBeat &&
+        body.end >= endBeat
+      ) {
+        y = 0;
+        h = (endBeat - body.start) * 48;
+      }
+      // Started before and ended at this bar
+      else if(
+        body.start < startBeat &&
+        body.end >= startBeat && body.end < endBeat
+      ) {
+        var endRelativeBeat = body.end - startBeat;
+        y = (thisBarLength - endRelativeBeat) * 48;
+        h = (body.end - startBeat) * 48;
+
+        longBody[i] = undefined;
+      }
+      // Started before this bar and not ended
+      else {
+        y = 0;
+        h = thisBarLength * 48;
+      }
+
+      output.push(longNotePattern.replace("{t}", t)
+                                 .replace("{x}", x)
+                                 .replace("{y}", y)
+                                 .replace("{h}", h));
+    }
+
+    longBody = longBody.filter(function(b) { return !!b; });
+
+    for(var i in longEnd) {
+      var note = longEnd[i];
+
+      if(note.beat >= startBeat && note.beat < endBeat) {
+        var relativeBeat = note.beat - startBeat;
+        var x = xtMap[note.column][0] + 35;
+        var y = (thisBarLength - relativeBeat) * 48 - 4;
+        var t = xtMap[note.column][1];
+
+        output.push(notePattern.replace("{x}", x)
+                               .replace("{y}", y)
+                               .replace("{t}", t));
+      }
+    }
+  }
+
   for(var idx in notes) {
     var note = notes[idx];
 
     if(note.beat >= barLengthSum[currentBar]) {
       while(note.beat >= barLengthSum[currentBar]) {
-        processBpmChange(barLengthSum[currentBar - 1], barLengthSum[currentBar]);
+        var startBeat = barLengthSum[currentBar - 1];
+        var endBeat = barLengthSum[currentBar];
+
+        processBpmChange(startBeat, endBeat);
+        processLong(startBeat, endBeat);
 
         barNotes[currentBar] = output;
         output = [];
+
         currentBar++;
       }
     }
@@ -156,9 +231,28 @@ function renderBms(chart) {
     output.push(notePattern.replace("{x}", x)
                            .replace("{y}", y)
                            .replace("{t}", t));
+
+    if(note.endBeat) {
+      // Those are processed at bar change
+      longBody.push({
+        column: note.column.column,
+        start: note.beat,
+        end: note.endBeat
+      });
+      longEnd.push({
+        column: note.column.column,
+        beat: note.endBeat
+      });
+    }
   }
 
   // Leftover
+
+  var startBeat = barLengthSum[currentBar - 1];
+  var endBeat = barLengthSum[currentBar];
+  var thisBarLength = endBeat - startBeat;
+  processBpmChange(startBeat, endBeat);
+  processLong(startBeat, endBeat);
   barNotes[currentBar] = output;
 
   console.log("Notes per bar", barNotes);
@@ -176,7 +270,7 @@ function renderBms(chart) {
 }
 
 function printBms(info, barLength, bpmChanges, barNotes) {
-  $(".before span")[0].innerHTML = "Printing............";
+  $(".before span")[0].innerHTML = "Printing...............";
 
   // Info first
   $(".after .info span")[0].innerHTML = "[" + info.genre + "] " + info.title
